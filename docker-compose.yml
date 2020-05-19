@@ -1,0 +1,45 @@
+# Версия docker-compose
+version: '2'
+# Список наших сервисов (контейнеров)
+services:
+    nginx:
+      # используем последний стабильный образ nginx
+        image: nginx:latest
+        # маршрутизируем порты
+        ports:
+            - "8000:80"
+        # монтируем директории, слева директории на основной машине, справа - куда они монтируются в контейнере
+        volumes:
+            - ./hosts:/etc/nginx/conf.d
+            - ./www:/var/www
+            - ./logs:/var/log/nginx
+        # nginx должен общаться с php контейнером
+        links:
+            - php
+    php:
+        # у нас свой образ для PHP, указываем путь к нему и говорим что его надо собрать
+        build: ./images/php
+        # этот образ будет общаться с mysql
+        links:
+            - db
+        # монтируем директорию с проектами
+        volumes:
+            - ./www:/var/www
+    db:
+        image: postgres
+        restart: always
+        ports:
+            - 5432:5432
+        environment:
+            PGDATA: /var/lib/postgresql/data/psqldata
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_DB: postgres
+            
+        # volumes:
+        #     - ./psql:/var/lib/postgresql/data/pgdata
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+            - 8080:8080
